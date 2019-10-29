@@ -85,7 +85,8 @@ lazy_static! {
                 "--with-jpeg-dir=/usr/include/",
                 "--with-png-dir=/usr/include/",
             ]),
-        "zip" => Builtin::new("zip".to_owned()).with_packages(&["libzip-dev"])
+        "soap" => Builtin::new("soap".to_owned()).with_packages(&["libxml2-dev"]),
+        "zip" => Builtin::new("zip".to_owned()).with_packages(&["libzip-dev"]),
     };
 }
 
