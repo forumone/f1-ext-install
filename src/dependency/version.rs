@@ -5,7 +5,7 @@ use nom::{
     bytes::complete::tag,
     character::complete::{char, digit1},
     combinator::{map, recognize},
-    error::{ParseError},
+    error::ParseError,
     sequence::{terminated, tuple},
     IResult,
 };
@@ -59,8 +59,7 @@ impl FromStr for Version {
     }
 }
 
-impl fmt::Display for Version
-{
+impl fmt::Display for Version {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Stable => write!(f, "stable"),

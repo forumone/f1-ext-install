@@ -121,7 +121,10 @@ mod tests {
             "libssl.so.45",
             "libxml2.so.2",
             "libz.so.1",
-        ].iter().cloned().collect();
+        ]
+        .iter()
+        .cloned()
+        .collect();
 
         let input = r#"
 libedit.so.0,libcurl.so.4,libz.so.1,libxml2.so.2,libssl.so.45,libcrypto.so.43,libc.musl-x86_64.so.1

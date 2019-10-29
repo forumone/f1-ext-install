@@ -75,18 +75,18 @@ where
 /// Installs the given PECL extension, and enables it if specified.
 pub fn install_pecl_extension(pecl: &Pecl) -> command::Result<()> {
     let name = pecl.name();
-        let enabled = pecl.default_enabled();
+    let enabled = pecl.default_enabled();
 
-        let mut command = Command::new("pecl");
-        command.arg("install");
-        command.arg(pecl.specifier());
+    let mut command = Command::new("pecl");
+    command.arg("install");
+    command.arg(pecl.specifier());
+    command.wait()?;
+
+    if enabled {
+        let mut command = Command::new("docker-php-ext-enable");
+        command.arg(name);
         command.wait()?;
+    }
 
-        if enabled {
-            let mut command = Command::new("docker-php-ext-enable");
-            command.arg(name);
-            command.wait()?;
-        }
-
-        Ok(())
+    Ok(())
 }

@@ -9,7 +9,7 @@ use nom::{
     combinator::{all_consuming, recognize},
     error::{convert_error, ParseError as NomParseError, VerboseError},
     multi::separated_nonempty_list,
-    sequence::{pair},
+    sequence::pair,
     Err, IResult,
 };
 use std::{error::Error, fmt};

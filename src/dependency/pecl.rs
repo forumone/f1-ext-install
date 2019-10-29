@@ -56,7 +56,6 @@ impl Pecl {
         self
     }
 
-
     /// Requests the specified version for installation.
     pub fn with_version(mut self, version: Version) -> Self {
         self.version = version;
