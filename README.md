@@ -1,6 +1,6 @@
-# About this image
+# About the command
 
-## Usage
+## Examples
 
 ```sh
 # Install a builtin (GD, opache, etc.)
@@ -19,7 +19,19 @@ f1-ext-install builtin:gd builtin:opcache pecl:memcached
 f1-ext-install --help
 ```
 
-## Discussion
+# About the image
+
+By itself, this image is useless. It's meant to be `COPY`ed into a PHP-based image:
+
+```Dockerfile
+FROM php:cli-alpine
+
+COPY --from=f1-ext-install f1-ext-install /usr/bin
+
+RUN f1-ext-install builtin:gd
+```
+
+# Discussion
 
 This image is intended for use when building PHP-based Docker images. Its sole function
 is to provide a utility called `f1-ext-install`, a small binary that serves as an
@@ -55,8 +67,3 @@ simply say `f1-ext-install pecl:memcached` to obtain the extension.
 
 This utility is _not_ suitable for general-purpose use; it assumes that it is running
 inside a Docker container during a build and can thus use mutate the systemwide state.
-
-# About this repository
-
-The `f1-ext-install` utility is written using the [Rust](https://www.rust-lang.org/)
-programming language. Please see that site for any langauge-related needs.
