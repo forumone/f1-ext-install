@@ -1,2 +1,5 @@
 /target
 **/*.rs.bk
+
+# Ignore this binary anywhere we see it
+f1-ext-install
