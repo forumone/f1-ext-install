@@ -1,4 +1,4 @@
-FROM rust:1.38-slim
+FROM rust:1.38-slim AS deps
 
 RUN rustup target add x86_64-unknown-linux-musl
 
@@ -12,7 +12,10 @@ COPY Cargo.toml Cargo.lock ./
 RUN cargo fetch --locked
 
 COPY src src
+RUN cargo build --offline --release --target x86_64-unknown-linux-musl
 
-RUN set -ex \
-  && cargo build --offline --release --target x86_64-unknown-linux-musl \
-  && cp target/x86_64-unknown-linux-musl/release/f1-ext-install ./
+# Use scratch for delivery (makes it easier for people to download)
+FROM scratch
+
+ARG BUILD_MODE=release
+COPY --from=deps /app/target/x86_64-unknown-linux-musl/${BUILD_MODE}/f1-ext-install ./
