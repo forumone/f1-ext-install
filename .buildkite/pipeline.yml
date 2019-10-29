@@ -1,6 +1,7 @@
 steps:
   - label: ":rust: Lint"
     commands:
+      - rustup component add rustfmt
       - cargo fmt -- --check
     plugins:
       - docker#v3.3.0:
