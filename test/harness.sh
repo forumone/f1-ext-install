@@ -40,7 +40,7 @@ declare -a failures=()
 for version in "${php_versions[@]}"; do
   for package in "$@"; do
     if ! build "$version" "$package"; then
-      failures+=("$package_type:$package (PHP ${version}")
+      failures+=("$package_type:$package (PHP ${version})")
     fi
   done
 done
@@ -55,4 +55,6 @@ else
   for failure in "${failures[@]}"; do
     echo "  * $failure" >/dev/stderr
   done
+
+  exit 1
 fi

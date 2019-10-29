@@ -18,9 +18,9 @@ steps:
       - artifacts#v1.2.0:
           upload:
             - from: target/x86_64-unknown-linux-musl/debug/f1-ext-install
-              to: bin/f1-ext-install
+              to: f1-ext-install
             - from: target/x86_64-unknown-linux-musl/debug/versions
-              to: bin/versions
+              to: versions
 
   - wait: ~
 
@@ -39,7 +39,7 @@ steps:
     plugins:
       - artifacts#v1.2.0:
           download:
-            from: bin/f1-ext-install
+            from: f1-ext-install
             to: test/f1-ext-install
 
   # Run sanity tests against PECL extensions
@@ -49,7 +49,7 @@ steps:
     plugins:
       - artifacts#v1.2.0:
           download:
-            from: bin/f1-ext-install
+            from: f1-ext-install
             to: test/f1-ext-install
 
   - wait: ~
