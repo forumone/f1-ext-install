@@ -10,7 +10,7 @@ steps:
   - label: ":rust: :hammer: Build"
     commands:
       - rustup target add x86_64-unknown-linux-musl
-      - cargo build --all --target x86_64-unknown-linux-musl
+      - cargo build --all --locked --target x86_64-unknown-linux-musl
     plugins:
       - docker#v3.3.0:
           image: 'rust:1.38-slim'
