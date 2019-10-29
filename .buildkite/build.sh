@@ -9,7 +9,7 @@ repository_name=f1-ext-install
 
 declare -a versions
 
-coproc VERSIONS { bin/versions; }
+coproc VERSIONS { target/x86_64-unknown-linux-musl/debug/versions; }
 
 mapfile -t -u "${VERSIONS[0]}" versions
 

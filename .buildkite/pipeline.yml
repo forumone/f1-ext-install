@@ -61,4 +61,4 @@ steps:
       - bash .buildkite/build.sh
     plugins:
       - artifacts#v1.2.0:
-          download: bin/versions
+          download: target/x86_64-unknown-linux-musl/debug/versions
