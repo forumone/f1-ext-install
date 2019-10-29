@@ -6,6 +6,7 @@ ARG PHP_VERSION
 FROM php:${PHP_VERSION}-cli-alpine
 
 COPY f1-ext-install /usr/bin/
+RUN chmod +x f1-ext-install
 
 # PACKAGE_TYPE is either "builtin" or "pecl"
 # PACKAGE_NAME is an extension (gd, memcached, etc.)
