@@ -3,6 +3,7 @@
 set -euo pipefail
 
 test_directory="$(dirname "${BASH_SOURCE[0]}")"
+project_directory="$(realpath "$test_directory/..")"
 
 php_versions=(7.3)
 
@@ -36,6 +37,8 @@ build() {
 }
 
 declare -a failures=()
+
+cp "$project_directory/target/x86_64-unknown-linux-musl/debug/f1-ext-install" "$test_directory/f1-ext-install"
 
 for version in "${php_versions[@]}"; do
   for package in "$@"; do

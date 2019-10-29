@@ -16,11 +16,7 @@ steps:
       - docker#v3.3.0:
           image: 'rust:1.38-slim'
       - artifacts#v1.2.0:
-          upload:
-            - from: target/x86_64-unknown-linux-musl/debug/f1-ext-install
-              to: f1-ext-install
-            - from: target/x86_64-unknown-linux-musl/debug/versions
-              to: versions
+          upload: [target/x86_64-unknown-linux-musl/debug/f1-ext-install, target/x86_64-unknown-linux-musl/debug/versions]
 
   - wait: ~
 
@@ -38,9 +34,7 @@ steps:
       - bash test/builtin.sh
     plugins:
       - artifacts#v1.2.0:
-          download:
-            from: f1-ext-install
-            to: test/f1-ext-install
+          download: target/x86_64-unknown-linux-musl/debug/f1-ext-install
 
   # Run sanity tests against PECL extensions
   - label: ":docker: PECL tests"
@@ -48,9 +42,7 @@ steps:
       - bash test/pecl.sh
     plugins:
       - artifacts#v1.2.0:
-          download:
-            from: f1-ext-install
-            to: test/f1-ext-install
+          download: target/x86_64-unknown-linux-musl/debug/f1-ext-install
 
   - wait: ~
 
