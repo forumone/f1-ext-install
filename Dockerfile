@@ -17,5 +17,4 @@ RUN cargo build --offline --release --target x86_64-unknown-linux-musl
 # Use scratch for delivery (makes it easier for people to download)
 FROM scratch
 
-ARG BUILD_MODE=release
-COPY --from=deps /app/target/x86_64-unknown-linux-musl/${BUILD_MODE}/f1-ext-install ./
+COPY --from=deps /app/target/x86_64-unknown-linux-musl/release/f1-ext-install ./
