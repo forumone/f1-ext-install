@@ -62,3 +62,6 @@ steps:
     plugins:
       - artifacts#v1.2.0:
           download: target/x86_64-unknown-linux-musl/debug/versions
+      - ecr#v2.0.0:
+          login: true
+          no_include_email: true
