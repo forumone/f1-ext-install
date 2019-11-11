@@ -67,7 +67,7 @@ steps:
           download: target/x86_64-unknown-linux-musl/debug/versions
       - seek-oss/aws-sm#v2.0.0:
           env:
-            DOCKER_LOGIN_PASSWORD: buildkite/dockerhub
+            DOCKER_LOGIN_PASSWORD: buildkite/dockerhubid
       - docker-login#v2.0.1:
           username: f1builder
           password-env: DOCKER_LOGIN_PASSWORD
