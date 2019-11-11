@@ -26,7 +26,7 @@ By itself, this image is useless. It's meant to be `COPY`ed into a PHP-based ima
 ```Dockerfile
 FROM php:cli-alpine
 
-COPY --from=f1-ext-install f1-ext-install /usr/bin
+COPY --from=forumone/f1-ext-install f1-ext-install /usr/bin
 
 RUN f1-ext-install builtin:gd
 ```
@@ -67,3 +67,8 @@ simply say `f1-ext-install pecl:memcached` to obtain the extension.
 
 This utility is _not_ suitable for general-purpose use; it assumes that it is running
 inside a Docker container during a build and can thus use mutate the systemwide state.
+
+# License
+
+`f1-ext-install` is dual-licensed under the MIT and Apache 2.0 licenses. See
+[LICENSE-MIT](LICENSE-MIT) and [LICENSE-APACHE](LICENSE-APACHE) for full details.

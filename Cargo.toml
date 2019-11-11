@@ -4,6 +4,8 @@ description = "Helper for building PHP extensions in Docker"
 version = "0.1.0"
 authors = ["gustavderdrache <aford@forumone.com>"]
 edition = "2018"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/forumone/f1-ext-install"
 
 [dependencies]
 env_logger = "0.7.0"
