@@ -1,4 +1,4 @@
-FROM rust:1.38-slim AS deps
+FROM rust:1.39-slim AS deps
 
 RUN rustup target add x86_64-unknown-linux-musl
 

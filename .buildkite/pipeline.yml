@@ -1,3 +1,6 @@
+env:
+  RUST_VERSION: '1.39'
+
 steps:
   - label: ":rust: Lint"
     commands:
@@ -5,7 +8,7 @@ steps:
       - cargo fmt -- --check
     plugins:
       - docker#v3.3.0:
-          image: 'rust:1.38-slim'
+          image: rust:$RUST_VERSION-slim
 
   - label: ":rust: :clippy:"
     commands:
@@ -13,7 +16,7 @@ steps:
       - cargo clippy
     plugins:
       - docker#v3.3.0:
-          image: 'rust:1.38-slim'
+          image: rust:$RUST_VERSION-slim
 
   # Build and share a debug copy of the f1-ext-install command
   - label: ":rust: :hammer: Build"
@@ -22,7 +25,7 @@ steps:
       - cargo build --all --locked --target x86_64-unknown-linux-musl
     plugins:
       - docker#v3.3.0:
-          image: 'rust:1.38-slim'
+          image: rust:$RUST_VERSION-slim
       - artifacts#v1.2.0:
           upload: [target/x86_64-unknown-linux-musl/debug/f1-ext-install, target/x86_64-unknown-linux-musl/debug/versions]
 
@@ -34,7 +37,7 @@ steps:
       - cargo test
     plugins:
       - docker#v3.3.0:
-          image: 'rust:1.38-slim'
+          image: rust:$RUST_VERSION-slim
 
   # Run cheap sanity tests against selected builtin extensions
   - label: ":docker: Builtin tests"
