@@ -292,7 +292,7 @@ dependencies = [
 
 [[package]]
 name = "f1-ext-install"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bollard 0.4.0-alpha.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
