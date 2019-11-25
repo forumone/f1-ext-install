@@ -1,7 +1,7 @@
 use indoc::indoc;
 
 mod common;
-use common::{build_image, connect, PHP_VERSIONS, tag_for_test};
+use common::{build_image, connect, tag_for_test, PHP_VERSIONS};
 
 const REGISTRY_DOCKERFILE: &str = indoc!(
     r#"ARG PHP_VERSION

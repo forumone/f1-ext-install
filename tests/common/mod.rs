@@ -65,5 +65,8 @@ pub fn build_image(client: &Docker, dockerfile: &str, args: &[(&str, &str)], tag
 
 /// Returns the Docker image tag for this test
 pub fn tag_for_test(test_type: &str, package: &str, php_version: &str) -> String {
-    format!("f1-ext-install-test:{}-{}-{}", test_type, package, php_version)
+    format!(
+        "f1-ext-install-test:{}-{}-{}",
+        test_type, package, php_version
+    )
 }
