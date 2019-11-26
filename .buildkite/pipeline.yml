@@ -59,6 +59,10 @@ steps:
   # Run cheap sanity tests against selected builtin extensions
   - label: ":docker: Builtin tests"
     commands:
+      # HACK: pre-19.03 engines (verified on 18.09) will crash Bollard if an image needs
+      # to be pulled during an image build, so we do it ahead of time until our builders
+      # are upgraded to the 19.03 daemon.
+      - docker pull php:7.3-cli-alpine
       - chmod +x target/debug/builtin
       - target/debug/builtin
     plugins:
@@ -70,6 +74,8 @@ steps:
   # Run sanity tests against PECL extensions
   - label: ":docker: PECL tests"
     commands:
+      # See note above for why we're pulling before testing
+      - docker pull php:7.3-cli-alpine
       - chmod +x target/debug/pecl
       - target/debug/pecl
     plugins:
