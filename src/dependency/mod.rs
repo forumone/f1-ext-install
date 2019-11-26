@@ -19,9 +19,6 @@ pub use parse::ParseError;
 pub use pecl::Pecl;
 pub use version::Version;
 
-/// Helper type to avoid the syntactic noise of nested reference syntax.
-pub type StringList<'a> = &'a [&'a str];
-
 /// Encapsulates a dependency needed by the Docker image currently being built.
 #[derive(Clone, Debug)]
 pub enum Dependency {
@@ -35,7 +32,7 @@ pub enum Dependency {
 impl Dependency {
     /// Retrieves the list of packages (if any) needed by this dependency. A package is
     /// represented by its name as intepreted by the `apk` package manager.
-    pub fn packages(&self) -> &Option<StringList<'_>> {
+    pub fn packages(&self) -> Option<&[String]> {
         match self {
             Self::Builtin(builtin) => builtin.packages(),
             Self::Pecl(pecl) => pecl.packages(),

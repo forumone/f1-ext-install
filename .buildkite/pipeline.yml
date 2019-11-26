@@ -21,20 +21,37 @@ steps:
   # Build and share a debug copy of the f1-ext-install command
   - label: ":rust: :hammer: Build"
     commands:
+      # Build the binary against the musl target (since it runs in an Alpine container)
       - rustup target add x86_64-unknown-linux-musl
-      - cargo build --all --locked --target x86_64-unknown-linux-musl
+      - cargo build --bins --locked --target x86_64-unknown-linux-musl
+
+      # Build the tests against glibc because we run these on the host system
+      # (this avoids a bunch of nonsense requiring musl-gcc and friends)
+      - cargo build --tests --locked
+
+      # Post-process the integration tests - Cargo outputs the name with a hash, but we
+      # want to be able to run them on the host system, so we'll need to make the name
+      # more predicatble
+      - find target/debug -maxdepth 1 -executable -name 'builtin-*' -execdir mv {} builtin \;
+      - find target/debug -maxdepth 1 -executable -name 'pecl-*' -execdir mv {} pecl \;
     plugins:
       - docker#v3.3.0:
           image: rust:$RUST_VERSION-slim
       - artifacts#v1.2.0:
-          upload: [target/x86_64-unknown-linux-musl/debug/f1-ext-install, target/x86_64-unknown-linux-musl/debug/versions]
+          upload:
+            # Binaries
+            - target/x86_64-unknown-linux-musl/debug/f1-ext-install
+            - target/x86_64-unknown-linux-musl/debug/versions
+            # Integration tests
+            - target/debug/builtin
+            - target/debug/pecl
 
   - wait: ~
 
   # Run unit and doctests
   - label: ":rust: Unit tests"
     commands:
-      - cargo test
+      - cargo test --lib --bins
     plugins:
       - docker#v3.3.0:
           image: rust:$RUST_VERSION-slim
@@ -42,18 +59,24 @@ steps:
   # Run cheap sanity tests against selected builtin extensions
   - label: ":docker: Builtin tests"
     commands:
-      - bash test/builtin.sh
+      - chmod +x target/debug/builtin
+      - target/debug/builtin
     plugins:
       - artifacts#v1.2.0:
-          download: target/x86_64-unknown-linux-musl/debug/f1-ext-install
+          download:
+            - target/x86_64-unknown-linux-musl/debug/f1-ext-install
+            - target/debug/builtin
 
   # Run sanity tests against PECL extensions
   - label: ":docker: PECL tests"
     commands:
-      - bash test/pecl.sh
+      - chmod +x target/debug/pecl
+      - target/debug/pecl
     plugins:
       - artifacts#v1.2.0:
-          download: target/x86_64-unknown-linux-musl/debug/f1-ext-install
+          download:
+            - target/x86_64-unknown-linux-musl/debug/f1-ext-install
+            - target/debug/pecl
 
   - wait: ~
 

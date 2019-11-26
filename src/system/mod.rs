@@ -33,7 +33,7 @@ pub fn collect_packages<'a>(dependencies: &'a [Dependency]) -> Vec<Cow<'a, str>>
 
     for dependency in dependencies {
         if let Some(packages) = dependency.packages() {
-            all_packages.extend(packages.iter().map(|s| (*s).into()));
+            all_packages.extend(packages.iter().map(Clone::clone).map(Into::into));
         }
     }
 
@@ -41,7 +41,11 @@ pub fn collect_packages<'a>(dependencies: &'a [Dependency]) -> Vec<Cow<'a, str>>
 }
 
 /// Invokes `docker-php-ext-configure` for the given builtin name and configure arguments.
-pub fn configure_builtin(name: &str, configure_args: &[&str]) -> command::Result<()> {
+pub fn configure_builtin<I, S>(name: &str, configure_args: I) -> command::Result<()>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
     let mut command = Command::new("docker-php-ext-configure");
     command.arg(name);
     command.args(configure_args);
@@ -75,7 +79,7 @@ where
 /// Installs the given PECL extension, and enables it if specified.
 pub fn install_pecl_extension(pecl: &Pecl) -> command::Result<()> {
     let name = pecl.name();
-    let enabled = pecl.default_enabled();
+    let enabled = pecl.is_enabled();
 
     let mut command = Command::new("pecl");
     command.arg("install");

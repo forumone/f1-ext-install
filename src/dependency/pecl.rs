@@ -9,9 +9,25 @@ use nom::{
     sequence::{preceded, tuple},
     IResult,
 };
+use serde::Deserialize;
 use std::{collections::BTreeMap, fmt, str::FromStr};
 
-use super::{parse, StringList, Version};
+use super::{parse, Version};
+
+/// Represents the data for a PECL extension.
+#[derive(Clone, Debug, Default, Deserialize)]
+pub struct PeclData {
+    /// The external package (if any) needed by this extension.
+    #[serde(default)]
+    packages: Option<Vec<String>>,
+
+    /// Should this extension be disabled by default in the Docker image being built?
+    ///
+    /// This field exists primarily to support XDebug, which is not enabled by default
+    /// due to the performance penalty it imposes.
+    #[serde(default)]
+    disabled: bool,
+}
 
 /// Represents the information needed to install and configure a PECL extension.
 #[derive(Clone, Debug)]
@@ -19,40 +35,42 @@ pub struct Pecl {
     /// The name of this PECL extension.
     name: String,
 
-    /// The external package (if any) needed by this extension.
-    packages: Option<StringList<'static>>,
-
-    /// Should this extension be enabled by default in the Docker image being built?
-    ///
-    /// This field exists primarily to support XDebug, which is not enabled by default
-    /// due to the performance penalty it imposes.
-    default_enabled: bool,
-
     /// The version requested for this installation.
     version: Version,
+
+    /// The data for this extension.
+    data: PeclData,
 }
 
 impl Pecl {
     /// Creates a new PECL extension with no external dependencies, enabled by default,
     /// and using the stable channel.
-    pub fn new(name: String) -> Self {
+    pub fn new<S>(name: S) -> Self
+    where
+        S: Into<String>,
+    {
         Self {
-            name,
-            packages: None,
-            default_enabled: true,
+            name: name.into(),
             version: Version::default(),
+            data: PeclData::default(),
         }
     }
 
+    /// Replaces this extension's data with the given data.
+    fn with_data(mut self, data: PeclData) -> Self {
+        self.data = data;
+        self
+    }
+
     /// Adds external packages to this PECL extension.
-    pub fn with_packages(mut self, packages: StringList<'static>) -> Self {
-        self.packages = Some(packages);
+    pub fn with_packages(mut self, packages: Vec<String>) -> Self {
+        self.data.packages = Some(packages);
         self
     }
 
     /// Marks this PECL package as disabled by default.
     pub fn disabled(mut self) -> Self {
-        self.default_enabled = false;
+        self.data.disabled = true;
         self
     }
 
@@ -68,13 +86,18 @@ impl Pecl {
     }
 
     /// Returns the list of external packages (if any) needed by this extension.
-    pub fn packages(&self) -> &Option<StringList<'_>> {
-        &self.packages
+    pub fn packages(&self) -> Option<&[String]> {
+        self.data.packages.as_ref().map(AsRef::as_ref)
     }
 
+    // /// Determines if this extension should be disabled by default.
+    // pub fn is_disabled(&self) -> bool {
+    //     self.data.disabled
+    // }
+
     /// Determines if this extension should be enabled by default.
-    pub fn default_enabled(&self) -> bool {
-        self.default_enabled
+    pub fn is_enabled(&self) -> bool {
+        !self.data.disabled
     }
 
     /// Returns the version requested by this extension.
@@ -102,13 +125,8 @@ impl<'a> Pecl {
         let name = parse::name;
         let version = opt(preceded(char('@'), Version::parse));
         let parser = tuple((name, version));
-        let parser = map(parser, |(name, version): (&str, _)| {
-            let pecl = REGISTRY
-                .get(name)
-                .cloned()
-                .unwrap_or_else(|| Pecl::new(name.to_owned()));
-
-            pecl.with_version(version.unwrap_or_default())
+        let parser = map(parser, |(name, version)| {
+            find_pecl(name).with_version(version.unwrap_or_default())
         });
 
         parser(input)
@@ -121,15 +139,33 @@ impl fmt::Display for Pecl {
     }
 }
 
+/// Finds a PECL extension by name. If not found, creates a new one with no dependencies.
+fn find_pecl(name: &str) -> Pecl {
+    if let Some(found) = REGISTRY.get(name) {
+        return found.clone();
+    }
+
+    let prefix = format!("F1_PECL_{}", name.to_ascii_uppercase());
+    if let Ok(data) = envy::prefixed(prefix).from_env() {
+        return Pecl::new(name).with_data(data);
+    }
+
+    Pecl::new(name)
+}
+
 lazy_static! {
     static ref REGISTRY: BTreeMap<&'static str, Pecl> = btreemap! {
-        "imagick" => Pecl::new("imagick".to_owned())
-            .with_packages(&["imagemagick-dev"]),
+        "imagick" => Pecl::new("imagick")
+            .with_packages(vec!["imagemagick-dev".into()]),
 
-        "memcached" => Pecl::new("memcached".to_owned())
-            .with_packages(&["libmemcached-dev", "zlib-dev", "libevent-dev"]),
+        "memcached" => Pecl::new("memcached")
+            .with_packages(vec![
+                "libmemcached-dev".into(),
+                "zlib-dev".into(),
+                "libevent-dev".into(),
+            ]),
 
-        "xdebug" => Pecl::new("xdebug".to_owned()).disabled(),
+        "xdebug" => Pecl::new("xdebug").disabled(),
     };
 }
 

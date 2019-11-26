@@ -1,21 +1,31 @@
 [package]
 name = "f1-ext-install"
 description = "Helper for building PHP extensions in Docker"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["gustavderdrache <aford@forumone.com>"]
 edition = "2018"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/forumone/f1-ext-install"
+default-run = "f1-ext-install"
 
 [dependencies]
 env_logger = "0.7.0"
+envy = "0.4"
 lazy_static = "1.4.0"
 log = "0.4.8"
 maplit = "1.0.2"
 nom = "5.0.1"
 num_cpus = "1.10.1"
 quick-error = "1.2.2"
+serde = { version = "1.0", features = ["derive"] }
 structopt = "0.3.3"
+
+[dev-dependencies]
+bollard = "0.4.0-alpha.1"
+futures-util-preview = "0.3.0-alpha.19"
+indoc = "0.3"
+tar = "0.4"
+tokio-test = "0.2.0-alpha.5"
 
 [profile.release]
 lto = true
