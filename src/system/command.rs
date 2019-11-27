@@ -1,6 +1,6 @@
 //! Helpers for interacting with system commands.
 
-use quick_error::{quick_error, ResultExt as _};
+use quick_error::{quick_error, ResultExt};
 use std::{
     borrow::Cow,
     convert::Into,
@@ -30,14 +30,13 @@ quick_error! {
         Io(command: String, err: io::Error) {
             context(command: &'a str, err: io::Error) -> (command.to_owned(), err)
             cause(err)
-            display("I/O Error: {}", err)
+            display("Failed to run {}: {}", command, err)
         }
 
         /// Indicates that a process exited with a non-zero code. On *nix systems, also
         /// indicates death by signal.
-        BadExit(exit: ExitStatus) {
-            from()
-            display("Process exited unsuccessfully: {}", exit_status_reason(*exit))
+        BadExit(command: String, exit: ExitStatus) {
+            display("{} exited unsuccessfully: {}", command, exit_status_reason(*exit))
         }
 
         /// Indicates that process output could not be decoded as valid UTF-8.
@@ -53,27 +52,12 @@ quick_error! {
 /// Helper type for the result of command execution.
 pub type Result<T> = std::result::Result<T, CommandError>;
 
-/// Extension trait for converting process exit codes into `Result`s.
-///
-/// This trait is the glue between a normal `ExitStatus` and `CommandError::BadExit`.
-pub trait ExitStatusExt {
-    /// Convert this object into a `Result<Self, CommandError>`.
-    ///
-    /// If the status is anything other than succesful, this method is expected to return
-    /// an `Err(CommandError::BadExit(exit))`. Otherwise, `Ok(self)` is returned. This
-    /// makes handling simple cases of failure more ergonomic.
-    fn into_result(self) -> Result<Self>
-    where
-        Self: Sized;
-}
-
-impl ExitStatusExt for ExitStatus {
-    fn into_result(self) -> Result<Self> {
-        if self.success() {
-            Ok(self)
-        } else {
-            Err(self.into())
-        }
+/// Convert an `ExitStatus` into a Result, using `command` for context to the user
+fn status_result(status: ExitStatus, command: &str) -> Result<ExitStatus> {
+    if status.success() {
+        Ok(status)
+    } else {
+        Err(CommandError::BadExit(String::from(command), status))
     }
 }
 
@@ -126,7 +110,7 @@ impl<'a> Command<'a> {
         let mut command: SystemCommand = self.into();
         let status = command.status().context(program)?;
 
-        let status = status.into_result()?;
+        let status = status_result(status, program)?;
         Ok(status)
     }
 
@@ -154,7 +138,7 @@ impl<'a> Command<'a> {
 
         let output = command.output().context(program)?;
 
-        let _ = output.status.into_result()?;
+        let _ = status_result(output.status, program)?;
 
         let buffer = String::from_utf8(output.stdout)?;
 

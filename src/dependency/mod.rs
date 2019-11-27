@@ -30,10 +30,10 @@ quick_error! {
     #[derive(Debug)]
     pub enum ParseError {
         ExpectedPrefix {
-            display(r#"Expected a prefix of either "{}" or "{}""#, BUILTIN_TAG, PECL_TAG)
+            display(r#"An extension name needs to begin with a prefix of either "{}" or "{}""#, BUILTIN_TAG, PECL_TAG)
         }
         InvalidSyntax {
-            display("Expected a valid PHP extension name")
+            display("An extension name needs to be a valid name (e.g., memcached, pdo_mysql, gd)")
         }
     }
 }

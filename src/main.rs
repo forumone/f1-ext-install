@@ -1,23 +1,10 @@
-use quick_error::quick_error;
-use std::str;
+use anyhow::Result;
 use structopt::StructOpt;
 
 use f1_ext_install::{
     dependency::Dependency,
     system::{self, Apk},
 };
-
-quick_error! {
-    /// Overall enum for errors.
-    #[derive(Debug)]
-    pub enum MainError {
-        /// Represents an error that arose during execution of an external command.
-        Command(err: system::command::CommandError) {
-            cause(err)
-            from()
-        }
-    }
-}
 
 /// Command-line options provided to `f1-ext-install`.
 #[derive(StructOpt, Debug)]
@@ -38,7 +25,7 @@ struct Opts {
     dependencies: Vec<Dependency>,
 }
 
-fn main() -> Result<(), MainError> {
+fn main() -> Result<()> {
     env_logger::init();
 
     let opts = Opts::from_args();
