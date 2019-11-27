@@ -9,10 +9,9 @@ repository = "https://github.com/forumone/f1-ext-install"
 default-run = "f1-ext-install"
 
 [dependencies]
-env_logger = "0.7.0"
+anyhow = "1.0"
 envy = "0.4"
 lazy_static = "1.4.0"
-log = "0.4.8"
 maplit = "1.0.2"
 num_cpus = "1.10.1"
 quick-error = "1.2.2"

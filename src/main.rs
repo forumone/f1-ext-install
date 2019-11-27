@@ -26,8 +26,6 @@ struct Opts {
 }
 
 fn main() -> Result<()> {
-    env_logger::init();
-
     let opts = Opts::from_args();
     let manager = Apk;
 
