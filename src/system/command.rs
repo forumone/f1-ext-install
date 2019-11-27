@@ -2,7 +2,6 @@
 
 use quick_error::{quick_error, ResultExt};
 use std::{
-    borrow::Cow,
     convert::Into,
     io,
     os::unix::process::ExitStatusExt as _,
@@ -12,13 +11,13 @@ use std::{
 };
 
 /// Returns a message indicating the cause of a process exit.
-fn exit_status_reason(status: ExitStatus) -> Cow<'static, str> {
+fn exit_status_reason(status: ExitStatus) -> String {
     if let Some(code) = status.code() {
-        format!("non-zero exit code {}", code).into()
+        format!("non-zero exit code {}", code)
     } else if let Some(signal) = status.signal() {
-        format!("killed by signal {}", signal).into()
+        format!("killed by signal {}", signal)
     } else {
-        "unknown reason".into()
+        String::from("unknown reason")
     }
 }
 
