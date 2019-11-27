@@ -89,14 +89,6 @@ pub struct Command<'a> {
     args: Vec<String>,
 }
 
-/// Helper function to convert a borrowable `str` into an owned `String`.
-fn to_string<S>(input: S) -> String
-where
-    S: AsRef<str>,
-{
-    str::to_owned(input.as_ref())
-}
-
 impl<'a> Command<'a> {
     /// Create a new `Command` struct that will execute the given `program`.
     pub fn new(program: &'a str) -> Self {
@@ -111,7 +103,7 @@ impl<'a> Command<'a> {
     where
         S: AsRef<str> + 'a,
     {
-        self.args.push(to_string(arg));
+        self.args.push(String::from(arg.as_ref()));
         self
     }
 
@@ -121,7 +113,7 @@ impl<'a> Command<'a> {
         S: AsRef<str> + 'a,
         I: IntoIterator<Item = S>,
     {
-        let args = args.into_iter().map(to_string);
+        let args = args.into_iter().map(|arg| String::from(arg.as_ref()));
 
         self.args.extend(args);
         self
@@ -134,7 +126,8 @@ impl<'a> Command<'a> {
         let mut command: SystemCommand = self.into();
         let status = command.status().context(program)?;
 
-        status.into_result().map_err(Into::into)
+        let status = status.into_result()?;
+        Ok(status)
     }
 
     /// Execute the given command and wait for it to complete, discarding successful
