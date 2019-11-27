@@ -2,17 +2,11 @@
 
 use lazy_static::lazy_static;
 use maplit::btreemap;
-use nom::{
-    character::complete::char,
-    combinator::{map, opt},
-    error::ParseError,
-    sequence::{preceded, tuple},
-    IResult,
-};
+use regex::Regex;
 use serde::Deserialize;
-use std::{collections::BTreeMap, fmt, str::FromStr};
+use std::{collections::BTreeMap, str::FromStr};
 
-use super::{parse, Version};
+use super::{ParseError, Version};
 
 /// Represents the data for a PECL extension.
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -43,142 +37,133 @@ pub struct Pecl {
 }
 
 impl Pecl {
-    /// Creates a new PECL extension with no external dependencies, enabled by default,
-    /// and using the stable channel.
-    pub fn new<S>(name: S) -> Self
-    where
-        S: Into<String>,
-    {
-        Self {
-            name: name.into(),
-            version: Version::default(),
-            data: PeclData::default(),
-        }
-    }
-
-    /// Replaces this extension's data with the given data.
-    fn with_data(mut self, data: PeclData) -> Self {
-        self.data = data;
-        self
-    }
-
-    /// Adds external packages to this PECL extension.
-    pub fn with_packages(mut self, packages: Vec<String>) -> Self {
-        self.data.packages = Some(packages);
-        self
-    }
-
-    /// Marks this PECL package as disabled by default.
-    pub fn disabled(mut self) -> Self {
-        self.data.disabled = true;
-        self
-    }
-
-    /// Requests the specified version for installation.
-    pub fn with_version(mut self, version: Version) -> Self {
-        self.version = version;
-        self
-    }
-
     /// Returns the name of this extension.
     pub fn name(&self) -> &str {
         &self.name
     }
 
     /// Returns the list of external packages (if any) needed by this extension.
-    pub fn packages(&self) -> Option<&[String]> {
-        self.data.packages.as_ref().map(AsRef::as_ref)
+    pub fn packages(&self) -> Option<&Vec<String>> {
+        self.data.packages.as_ref()
     }
-
-    // /// Determines if this extension should be disabled by default.
-    // pub fn is_disabled(&self) -> bool {
-    //     self.data.disabled
-    // }
 
     /// Determines if this extension should be enabled by default.
     pub fn is_enabled(&self) -> bool {
         !self.data.disabled
     }
 
-    /// Returns the version requested by this extension.
-    pub fn version(&self) -> &Version {
-        // This method is only used in testing right now, so let it pass
-        #![allow(dead_code)]
+    /// Returns the PECL extension specifier for this PECL extension, in the format NAME-VERSION.
+    pub fn specifier(&self) -> String {
+        format!("{}-{}", self.name, self.version)
+    }
 
+    // Allow access to the extension's version for unit testing
+    #[cfg(test)]
+    pub fn version(&self) -> &Version {
         &self.version
     }
-
-    /// Returns the PECL package specifier for this PECL extension, in the format NAME-VERSION.
-    pub fn specifier(&self) -> String {
-        format!("{}", self)
-    }
-}
-
-impl<'a> Pecl {
-    /// Attempts to parse a PECL extension name and version from the input.
-    ///
-    /// The syntax of an extension takes two forms:
-    /// * `<name>` - this is an installation request for the latest stable `<name>`
-    /// * `<name>@<version>` - this is an installation request for a specific version,
-    ///   which is either the string "stable" or a semver version (MAJOR.MINOR.PATCH).
-    pub fn parse<E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Self, E> {
-        let name = parse::name;
-        let version = opt(preceded(char('@'), Version::parse));
-        let parser = tuple((name, version));
-        let parser = map(parser, |(name, version)| {
-            find_pecl(name).with_version(version.unwrap_or_default())
-        });
-
-        parser(input)
-    }
-}
-
-impl fmt::Display for Pecl {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}-{}", self.name, self.version)
-    }
-}
-
-/// Finds a PECL extension by name. If not found, creates a new one with no dependencies.
-fn find_pecl(name: &str) -> Pecl {
-    if let Some(found) = REGISTRY.get(name) {
-        return found.clone();
-    }
-
-    let prefix = format!("F1_PECL_{}", name.to_ascii_uppercase());
-    if let Ok(data) = envy::prefixed(prefix).from_env() {
-        return Pecl::new(name).with_data(data);
-    }
-
-    Pecl::new(name)
 }
 
 lazy_static! {
     static ref REGISTRY: BTreeMap<&'static str, Pecl> = btreemap! {
-        "imagick" => Pecl::new("imagick")
-            .with_packages(vec!["imagemagick-dev".into()]),
+        "imagick" => Pecl {
+            name: String::from("imagick"),
+            version: Version::default(),
+            data: PeclData {
+                packages: Some(vec![String::from("imagemagick-dev")]),
+                ..PeclData::default()
+            },
+        },
 
-        "memcached" => Pecl::new("memcached")
-            .with_packages(vec![
-                "libmemcached-dev".into(),
-                "zlib-dev".into(),
-                "libevent-dev".into(),
-            ]),
+        "memcached" => Pecl {
+            name: String::from("memcached"),
+            version: Version::default(),
+            data: PeclData {
+                packages: Some(vec![
+                    String::from("libmemcached-dev"),
+                    String::from("zlib-dev"),
+                    String::from("libevent-dev"),
+                ]),
+                ..PeclData::default()
+            },
+        },
 
-        "xdebug" => Pecl::new("xdebug").disabled(),
+        "xdebug" => Pecl {
+            name: String::from("xdebug"),
+            version: Version::default(),
+            data: PeclData {
+                disabled: true,
+                ..PeclData::default()
+            }
+        },
     };
 }
 
+/// Finds a PECL extension by name. If not found, creates a new one with no dependencies.
+fn find_pecl(name: &str, version: Version) -> Pecl {
+    if let Some(found) = REGISTRY.get(name) {
+        return Pecl {
+            version,
+            ..found.clone()
+        };
+    }
+
+    let prefix = format!("F1_PECL_{}", name.to_ascii_uppercase());
+
+    let data = match envy::prefixed(prefix).from_env() {
+        Ok(data) => data,
+        Err(_) => PeclData::default(),
+    };
+
+    Pecl {
+        name: String::from(name),
+        version,
+        data,
+    }
+}
+
 impl FromStr for Pecl {
-    type Err = super::ParseError;
+    type Err = ParseError;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
-        parse::parse_all(input, Self::parse)
+        lazy_static! {
+            static ref PECL: Regex = Regex::new(
+                r#"(?x)
+                ^
+                (?P<name>[_a-zA-Z0-9]+)
+                (?:@(?P<version>stable|\d+\.\d+\.\d+))?
+                $
+                "#
+            )
+            .unwrap();
+        }
+
+        let caps = match PECL.captures(input) {
+            Some(caps) => caps,
+            None => return Err(ParseError::InvalidSyntax {}),
+        };
+
+        let name = &caps["name"];
+        let version = match caps.name("version") {
+            Some(cap) => {
+                let cap = cap.as_str();
+                if cap == "stable" {
+                    Version::Stable
+                } else {
+                    Version::Custom(String::from(cap))
+                }
+            }
+            None => Version::default(),
+        };
+
+        Ok(find_pecl(name, version))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use cool_asserts::assert_matches;
+
     use super::*;
 
     #[test]
@@ -196,22 +181,24 @@ mod tests {
     #[test]
     fn test_stable() {
         let xdebug: Pecl = "xdebug@stable".parse().unwrap();
-        assert_eq!(xdebug.name(), "xdebug");
-        match xdebug.version {
-            Version::Stable => {}
-            _ => assert!(false),
-        }
+        assert_eq!(xdebug.name(), "xdebug", "xdebug should have name xdebug");
+        assert_matches!(
+            xdebug.version(),
+            Version::Stable,
+            "xdebug@stable should have an explicit stable version",
+        );
     }
 
     #[test]
     fn test_version() {
         let xdebug: Pecl = "xdebug@2.5.5".parse().unwrap();
-        assert_eq!(xdebug.name(), "xdebug");
-        match xdebug.version {
+        assert_eq!(xdebug.name(), "xdebug", "xdebug should have name xdebug");
+        assert_matches!(
+            xdebug.version(),
             Version::Custom(version) => {
                 assert_eq!(version, "2.5.5");
-            }
-            _ => assert!(false),
-        }
+            },
+            "xdebug@2.5.5 should have custom version 2.5.5",
+        );
     }
 }
