@@ -65,61 +65,41 @@ impl Pecl {
 }
 
 lazy_static! {
-    static ref REGISTRY: BTreeMap<&'static str, Pecl> = btreemap! {
-        "imagick" => Pecl {
-            name: String::from("imagick"),
-            version: Version::default(),
-            data: PeclData {
-                packages: Some(vec![String::from("imagemagick-dev")]),
-                ..PeclData::default()
-            },
+    static ref REGISTRY: BTreeMap<&'static str, PeclData> = btreemap! {
+        "imagick" => PeclData {
+            packages: Some(vec![String::from("imagemagick-dev")]),
+            ..PeclData::default()
         },
 
-        "memcached" => Pecl {
-            name: String::from("memcached"),
-            version: Version::default(),
-            data: PeclData {
-                packages: Some(vec![
-                    String::from("libmemcached-dev"),
-                    String::from("zlib-dev"),
-                    String::from("libevent-dev"),
-                ]),
-                ..PeclData::default()
-            },
+        "memcached" => PeclData {
+            packages: Some(vec![
+                String::from("libmemcached-dev"),
+                String::from("zlib-dev"),
+                String::from("libevent-dev"),
+            ]),
+            ..PeclData::default()
         },
 
-        "xdebug" => Pecl {
-            name: String::from("xdebug"),
-            version: Version::default(),
-            data: PeclData {
-                disabled: true,
-                ..PeclData::default()
-            }
+        "xdebug" => PeclData {
+            disabled: true,
+            ..PeclData::default()
         },
     };
 }
 
-/// Finds a PECL extension by name. If not found, creates a new one with no dependencies.
-fn find_pecl(name: &str, version: Version) -> Pecl {
+/// Finds a PECL extension's data from either the internal registry or the environment.
+/// If neither attempt succeeds, returns empty PECL data.
+fn find_pecl_data(name: &str) -> PeclData {
     if let Some(found) = REGISTRY.get(name) {
-        return Pecl {
-            version,
-            ..found.clone()
-        };
+        return found.clone();
     }
 
     let prefix = format!("F1_PECL_{}", name.to_ascii_uppercase());
-
-    let data = match envy::prefixed(prefix).from_env() {
-        Ok(data) => data,
-        Err(_) => PeclData::default(),
-    };
-
-    Pecl {
-        name: String::from(name),
-        version,
-        data,
+    if let Ok(data) = envy::prefixed(prefix).from_env() {
+        return data;
     }
+
+    PeclData::default()
 }
 
 impl FromStr for Pecl {
@@ -156,7 +136,11 @@ impl FromStr for Pecl {
             None => Version::default(),
         };
 
-        Ok(find_pecl(name, version))
+        Ok(Pecl {
+            name: String::from(name),
+            version,
+            data: find_pecl_data(name),
+        })
     }
 }
 

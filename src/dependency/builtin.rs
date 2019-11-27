@@ -48,58 +48,46 @@ impl Builtin {
 }
 
 lazy_static! {
-    static ref REGISTRY: BTreeMap<&'static str, Builtin> = btreemap! {
-        "gd" => Builtin {
-            name: String::from("gd"),
-            data: BuiltinData {
-                packages: Some(vec![
-                    String::from("coreutils"),
-                    String::from("freetype-dev"),
-                    String::from("libjpeg-turbo-dev"),
-                ]),
-                configure_cmd: Some(vec![
-                    String::from("--with-freetype-dir=/usr/include/"),
-                    String::from("--with-jpeg-dir=/usr/include/"),
-                    String::from("--with-png-dir=/usr/include/"),
-                ]),
-            },
+    static ref REGISTRY: BTreeMap<&'static str, BuiltinData> = btreemap! {
+        "gd" => BuiltinData {
+            packages: Some(vec![
+                String::from("coreutils"),
+                String::from("freetype-dev"),
+                String::from("libjpeg-turbo-dev"),
+            ]),
+            configure_cmd: Some(vec![
+                String::from("--with-freetype-dir=/usr/include/"),
+                String::from("--with-jpeg-dir=/usr/include/"),
+                String::from("--with-png-dir=/usr/include/"),
+            ]),
         },
 
-        "soap" => Builtin {
-            name: String::from("soap"),
-            data: BuiltinData {
-                packages: Some(vec![String::from("libxml2-dev")]),
-                ..BuiltinData::default()
-            },
+        "soap" => BuiltinData {
+            packages: Some(vec![String::from("libxml2-dev")]),
+            ..BuiltinData::default()
         },
 
-        "zip" => Builtin {
-            name: String::from("zip"),
-            data: BuiltinData {
-                packages: Some(vec![String::from("libzip-dev")]),
-                ..BuiltinData::default()
-            }
+        "zip" => BuiltinData {
+            packages: Some(vec![String::from("libzip-dev")]),
+            ..BuiltinData::default()
         },
     };
 }
 
-/// Finds (or creates) a builtin by name.
-fn find_builtin(name: &str) -> Builtin {
+/// Finds a builtin extensoin's data from either the internal registry or the environment.
+/// If neither attempt succeeds, returns empty builtin data.
+fn find_builtin_data(name: &str) -> BuiltinData {
     if let Some(found) = REGISTRY.get(name) {
         return found.clone();
     }
 
     let prefix = format!("F1_BUILTIN_{}_", name.to_ascii_uppercase());
 
-    let data = match envy::prefixed(prefix).from_env() {
-        Ok(data) => data,
-        Err(_) => BuiltinData::default(),
+    if let Ok(data) = envy::prefixed(prefix).from_env() {
+        return data;
     };
 
-    Builtin {
-        name: String::from(name),
-        data,
-    }
+    BuiltinData::default()
 }
 
 impl FromStr for Builtin {
@@ -110,11 +98,14 @@ impl FromStr for Builtin {
             static ref BUILTIN: Regex = Regex::new(r"^[_a-zA-Z0-9]+$").unwrap();
         }
 
-        if BUILTIN.is_match(input) {
-            Ok(find_builtin(input))
-        } else {
-            Err(ParseError::InvalidSyntax {})
+        if !BUILTIN.is_match(input) {
+            return Err(ParseError::InvalidSyntax {});
         }
+
+        Ok(Builtin {
+            name: String::from(input),
+            data: find_builtin_data(input),
+        })
     }
 }
 
