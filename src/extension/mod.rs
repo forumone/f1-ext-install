@@ -38,18 +38,18 @@ quick_error! {
     }
 }
 
-/// Encapsulates a dependency needed by the Docker image currently being built.
+/// Encapsulates an extension needed by the Docker image currently being built.
 #[derive(Clone, Debug)]
-pub enum Dependency {
-    /// This dependency is a PHP builtin (e.g., `gd`, `opcache).
+pub enum Extension {
+    /// This extension is a PHP builtin (e.g., `gd`, `opcache).
     Builtin(Builtin),
 
-    /// This dependency is a PECL extension (e.g., `memcached`, XDebug).
+    /// This extension is a PECL extension (e.g., `memcached`, XDebug).
     Pecl(Pecl),
 }
 
-impl Dependency {
-    /// Retrieves the list of packages (if any) needed by this dependency. A package is
+impl Extension {
+    /// Retrieves the list of packages (if any) needed by this extension. A package is
     /// represented by its name as intepreted by the `apk` package manager.
     pub fn packages(&self) -> Option<&Vec<String>> {
         match self {
@@ -58,7 +58,7 @@ impl Dependency {
         }
     }
 
-    /// Determines if this dependency needs any external packages.
+    /// Determines if this extension needs any external packages.
     pub fn has_packages(&self) -> bool {
         match self.packages() {
             None => false,
@@ -67,7 +67,7 @@ impl Dependency {
     }
 }
 
-impl FromStr for Dependency {
+impl FromStr for Extension {
     type Err = ParseError;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
@@ -93,10 +93,10 @@ mod tests {
 
     #[test]
     fn test_parse_builtin() {
-        let gd: Dependency = "builtin:gd".parse().unwrap();
+        let gd: Extension = "builtin:gd".parse().unwrap();
         assert_matches!(
             gd,
-            Dependency::Builtin(gd) => {
+            Extension::Builtin(gd) => {
                 assert_eq!(gd.name(), "gd", "builtin:gd should have name gd");
             },
             "builtin:gd should be a builtin extension",
@@ -105,10 +105,10 @@ mod tests {
 
     #[test]
     fn test_parse_pecl() {
-        let xdebug: Dependency = "pecl:xdebug".parse().unwrap();
+        let xdebug: Extension = "pecl:xdebug".parse().unwrap();
         assert_matches!(
             xdebug,
-            Dependency::Pecl(xdebug) => {
+            Extension::Pecl(xdebug) => {
                 assert_eq!(xdebug.name(), "xdebug", "pecl:xdebug should have name xdebug");
                 assert_matches!(
                     xdebug.version(),
@@ -122,10 +122,10 @@ mod tests {
 
     #[test]
     fn test_parse_pecl_explicit_stable() {
-        let xdebug: Dependency = "pecl:xdebug@stable".parse().unwrap();
+        let xdebug: Extension = "pecl:xdebug@stable".parse().unwrap();
         assert_matches!(
             xdebug,
-            Dependency::Pecl(xdebug) => {
+            Extension::Pecl(xdebug) => {
                 assert_eq!(xdebug.name(), "xdebug", "pecl:xdebug@stable should have name xdebug");
                 assert_matches!(
                     xdebug.version(),
@@ -139,10 +139,10 @@ mod tests {
 
     #[test]
     fn test_parse_pecl_explicit_version() {
-        let xdebug: Dependency = "pecl:xdebug@2.5.5".parse().unwrap();
+        let xdebug: Extension = "pecl:xdebug@2.5.5".parse().unwrap();
         assert_matches!(
             xdebug,
-            Dependency::Pecl(xdebug) => {
+            Extension::Pecl(xdebug) => {
                 assert_eq!(xdebug.name(), "xdebug", "pecl:xdebug@2.5.5 should have name xdebug");
                 assert_matches!(
                     xdebug.version(),
@@ -159,6 +159,6 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_parse_pecl_garbage_version() {
-        let _: Dependency = "pecl:xdebug@askjdfh".parse().unwrap();
+        let _: Extension = "pecl:xdebug@askjdfh".parse().unwrap();
     }
 }

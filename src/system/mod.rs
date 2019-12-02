@@ -7,7 +7,7 @@ use std::env;
 mod alpine;
 pub mod command;
 
-use super::dependency::{Dependency, Pecl};
+use super::extension::{Extension, Pecl};
 use command::Command;
 
 pub use alpine::Apk;
@@ -20,7 +20,7 @@ lazy_static! {
 ///
 /// This function also collects the values in `$PHPIZE_DEPS`, which names the system
 /// C compiler and other utilities needed to build extensions.
-pub fn collect_packages<'a>(dependencies: &'a [Dependency]) -> Vec<String> {
+pub fn collect_packages(dependencies: &[Extension]) -> Vec<String> {
     let mut all_packages = Vec::new();
 
     let phpize_deps = env::var("PHPIZE_DEPS").unwrap_or_default();

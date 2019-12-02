@@ -8,11 +8,12 @@ use super::{
     collect_packages,
     command::{self, Command},
 };
-use crate::dependency::Dependency;
+
+use crate::extension::Extension;
 
 /// Helper function to split the output of `scanelf`.
 fn split_scanelf_output(input: &str) -> HashSet<&str> {
-    lazy_static!{
+    lazy_static! {
         static ref DELIM: Regex = Regex::new(r"[,\s]+").unwrap();
     };
 
@@ -24,12 +25,12 @@ pub struct Apk;
 
 impl Apk {
     /// Uses the system package manager to install the packages required by the given
-    /// list of dependencies.
+    /// list of extensions.
     ///
-    /// This method also uses the dependencies stored in `$PHPIZE_DEPS`, granting access
+    /// This method also uses the extensions stored in `$PHPIZE_DEPS`, granting access
     /// to the C compiler and other tools.
-    pub fn install_packages(&self, dependencies: &[Dependency]) -> command::Result<()> {
-        let packages = collect_packages(dependencies);
+    pub fn install_packages(&self, extensions: &[Extension]) -> command::Result<()> {
+        let packages = collect_packages(extensions);
 
         let mut command = Command::new("apk");
         command.args(&["add", "--no-cache", "--virtual", ".build-deps"]);
