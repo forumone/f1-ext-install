@@ -46,7 +46,7 @@ pub enum CommandError {
     #[snafu(display("UTF-8 error: {}", source))]
     Utf8 {
         /// The underlying UTF-8 error
-        source: FromUtf8Error
+        source: FromUtf8Error,
     },
 }
 

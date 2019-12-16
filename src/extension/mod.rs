@@ -32,13 +32,19 @@ pub enum ParseError {
     /// A prefix mismatch was encountered.
     ///
     /// We expect either `"builtin:"` or `"pecl:"` in order to identify which installation method is to be used.
-    #[snafu(display(r#"An extension name needs to begin with a prefix of either "{}" or "{}""#, BUILTIN_TAG, PECL_TAG))]
+    #[snafu(display(
+        r#"An extension name needs to begin with a prefix of either "{}" or "{}""#,
+        BUILTIN_TAG,
+        PECL_TAG
+    ))]
     ExpectedPrefix,
 
     /// The name is invalid.
     ///
     /// Extension names should be valid identifiers (matching the expression `/^[_a-zA-Z][_a-zA-Z0-9]*/$`)
-    #[snafu(display("An extension name needs to be a valid name (e.g., memcached, pdo_mysql, gd)"))]
+    #[snafu(display(
+        "An extension name needs to be a valid name (e.g., memcached, pdo_mysql, gd)"
+    ))]
     InvalidSyntax,
 }
 
