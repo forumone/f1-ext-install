@@ -8,7 +8,7 @@ use tokio_test::block_on;
 pub const F1_EXT_INSTALL_PATH: &str = "target/x86_64-unknown-linux-musl/debug/f1-ext-install";
 
 /// PHP versions to run integration tests against.
-pub const PHP_VERSIONS: &[&str] = &["7.3"];
+pub const PHP_VERSIONS: &[&str] = &["7.3", "7.4"];
 
 /// Create a Docker client that is connected to the local daemon.
 pub fn connect() -> Docker {

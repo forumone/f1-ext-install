@@ -63,6 +63,7 @@ steps:
       # to be pulled during an image build, so we do it ahead of time until our builders
       # are upgraded to the 19.03 daemon.
       - docker pull php:7.3-cli-alpine
+      - docker pull php:7.7-cli-alpine
       - chmod +x target/debug/builtin
       - target/debug/builtin
     plugins:
@@ -76,6 +77,7 @@ steps:
     commands:
       # See note above for why we're pulling before testing
       - docker pull php:7.3-cli-alpine
+      - docker pull php:7.7-cli-alpine
       - chmod +x target/debug/pecl
       - target/debug/pecl
     plugins:
