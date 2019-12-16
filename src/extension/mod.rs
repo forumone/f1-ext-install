@@ -3,7 +3,7 @@
 //! A dependency is broken down into two categories: builtins and PECL. The structs in
 //! this module exist to capture the information needed to configure and install them.
 
-use quick_error::quick_error;
+use snafu::Snafu;
 use std::str::FromStr;
 
 mod builtin;
@@ -26,16 +26,20 @@ const PECL_TAG: &str = "pecl:";
 /// Length of the "pecl:" prefix
 const PECL_LEN: usize = PECL_TAG.len();
 
-quick_error! {
-    #[derive(Debug)]
-    pub enum ParseError {
-        ExpectedPrefix {
-            display(r#"An extension name needs to begin with a prefix of either "{}" or "{}""#, BUILTIN_TAG, PECL_TAG)
-        }
-        InvalidSyntax {
-            display("An extension name needs to be a valid name (e.g., memcached, pdo_mysql, gd)")
-        }
-    }
+/// Errors returned during parsing
+#[derive(Debug, Snafu)]
+pub enum ParseError {
+    /// A prefix mismatch was encountered.
+    ///
+    /// We expect either `"builtin:"` or `"pecl:"` in order to identify which installation method is to be used.
+    #[snafu(display(r#"An extension name needs to begin with a prefix of either "{}" or "{}""#, BUILTIN_TAG, PECL_TAG))]
+    ExpectedPrefix,
+
+    /// The name is invalid.
+    ///
+    /// Extension names should be valid identifiers (matching the expression `/^[_a-zA-Z][_a-zA-Z0-9]*/$`)
+    #[snafu(display("An extension name needs to be a valid name (e.g., memcached, pdo_mysql, gd)"))]
+    InvalidSyntax,
 }
 
 /// Encapsulates an extension needed by the Docker image currently being built.

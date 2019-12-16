@@ -120,7 +120,7 @@ impl FromStr for Pecl {
 
         let caps = match PECL.captures(input) {
             Some(caps) => caps,
-            None => return Err(ParseError::InvalidSyntax {}),
+            None => return Err(ParseError::InvalidSyntax),
         };
 
         let name = &caps["name"];

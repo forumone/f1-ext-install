@@ -99,7 +99,7 @@ impl FromStr for Builtin {
         }
 
         if !BUILTIN.is_match(input) {
-            return Err(ParseError::InvalidSyntax {});
+            return Err(ParseError::InvalidSyntax);
         }
 
         Ok(Builtin {
