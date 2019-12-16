@@ -1,38 +1,23 @@
 //! Helper for Alpine `apk` package management.
 
-use nom::{
-    branch::alt,
-    bytes::complete::{tag, take_till1},
-    character::complete::{multispace0, multispace1},
-    combinator::all_consuming,
-    multi::separated_list,
-    sequence::delimited,
-    IResult,
-};
+use lazy_static::lazy_static;
+use regex::Regex;
 use std::{collections::HashSet, fs::File, path::Path};
 
 use super::{
     collect_packages,
     command::{self, Command},
 };
-use crate::dependency::Dependency;
+
+use crate::extension::Extension;
 
 /// Helper function to split the output of `scanelf`.
 fn split_scanelf_output(input: &str) -> HashSet<&str> {
-    let comma = tag(",");
-    let separator = alt((comma, multispace1));
+    lazy_static! {
+        static ref DELIM: Regex = Regex::new(r"[,\s]+").unwrap();
+    };
 
-    let word = take_till1(|c: char| c == ',' || c.is_ascii_whitespace());
-
-    let list = separated_list(separator, word);
-    let parser = delimited(multispace0, list, multispace0);
-    let parser = all_consuming(parser);
-
-    let result: IResult<_, _> = parser(input);
-
-    result
-        .map(|(_, entries)| entries.into_iter().collect())
-        .unwrap_or_default()
+    DELIM.split(input).filter(|s| !s.is_empty()).collect()
 }
 
 /// Struct representing an Alpine package manager.
@@ -40,12 +25,12 @@ pub struct Apk;
 
 impl Apk {
     /// Uses the system package manager to install the packages required by the given
-    /// list of dependencies.
+    /// list of extensions.
     ///
-    /// This method also uses the dependencies stored in `$PHPIZE_DEPS`, granting access
+    /// This method also uses the extensions stored in `$PHPIZE_DEPS`, granting access
     /// to the C compiler and other tools.
-    pub fn install_packages(&self, dependencies: &[Dependency]) -> command::Result<()> {
-        let packages = collect_packages(dependencies);
+    pub fn install_packages(&self, extensions: &[Extension]) -> command::Result<()> {
+        let packages = collect_packages(extensions);
 
         let mut command = Command::new("apk");
         command.args(&["add", "--no-cache", "--virtual", ".build-deps"]);

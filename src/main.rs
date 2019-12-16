@@ -1,31 +1,18 @@
-use quick_error::quick_error;
-use std::str;
+use anyhow::Result;
 use structopt::StructOpt;
 
 use f1_ext_install::{
-    dependency::Dependency,
+    extension::Extension,
     system::{self, Apk},
 };
-
-quick_error! {
-    /// Overall enum for errors.
-    #[derive(Debug)]
-    pub enum MainError {
-        /// Represents an error that arose during execution of an external command.
-        Command(err: system::command::CommandError) {
-            cause(err)
-            from()
-        }
-    }
-}
 
 /// Command-line options provided to `f1-ext-install`.
 #[derive(StructOpt, Debug)]
 #[structopt(about)]
 struct Opts {
-    /// The dependencies to install during this execution.
+    /// The extensions to install during this execution.
     ///
-    /// Dependencies are provided with a simple syntax:
+    /// Extensions are identified with a simple syntax:
     ///
     /// * `builtin:<name>` - install the named PHP builtin
     ///
@@ -35,22 +22,20 @@ struct Opts {
     ///
     /// * `pecl:<name>@<version>` - install a specific version (in MAJOR.MINOR.PATCH) format
     #[structopt(min_values(1))]
-    dependencies: Vec<Dependency>,
+    extensions: Vec<Extension>,
 }
 
-fn main() -> Result<(), MainError> {
-    env_logger::init();
-
+fn main() -> Result<()> {
     let opts = Opts::from_args();
     let manager = Apk;
 
-    manager.install_packages(&opts.dependencies)?;
+    manager.install_packages(&opts.extensions)?;
 
     let builtins: Vec<_> = opts
-        .dependencies
+        .extensions
         .iter()
-        .filter_map(|dependency| match dependency {
-            Dependency::Builtin(builtin) => Some(builtin),
+        .filter_map(|extension| match extension {
+            Extension::Builtin(builtin) => Some(builtin),
             _ => None,
         })
         .collect();
@@ -63,16 +48,16 @@ fn main() -> Result<(), MainError> {
 
     system::install_builtins(builtins.iter().map(|builtin| builtin.name()))?;
 
-    for dependency in &opts.dependencies {
-        let pecl = match dependency {
-            Dependency::Pecl(pecl) => pecl,
+    for extension in &opts.extensions {
+        let pecl = match extension {
+            Extension::Pecl(pecl) => pecl,
             _ => continue,
         };
 
         system::install_pecl_extension(pecl)?;
     }
 
-    let save_rundeps = opts.dependencies.iter().any(Dependency::has_packages);
+    let save_rundeps = opts.extensions.iter().any(Extension::has_packages);
     if save_rundeps {
         manager.save_runtime_deps()?;
     }

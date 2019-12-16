@@ -2,12 +2,12 @@
 
 use lazy_static::lazy_static;
 use num_cpus;
-use std::{borrow::Cow, env};
+use std::env;
 
 mod alpine;
 pub mod command;
 
-use super::dependency::{Dependency, Pecl};
+use super::extension::{Extension, Pecl};
 use command::Command;
 
 pub use alpine::Apk;
@@ -20,20 +20,17 @@ lazy_static! {
 ///
 /// This function also collects the values in `$PHPIZE_DEPS`, which names the system
 /// C compiler and other utilities needed to build extensions.
-pub fn collect_packages<'a>(dependencies: &'a [Dependency]) -> Vec<Cow<'a, str>> {
-    let mut all_packages: Vec<Cow<'_, _>> = Vec::new();
+pub fn collect_packages(dependencies: &[Extension]) -> Vec<String> {
+    let mut all_packages = Vec::new();
 
     let phpize_deps = env::var("PHPIZE_DEPS").unwrap_or_default();
-    let phpize_deps = phpize_deps
-        .split_ascii_whitespace()
-        .map(str::to_owned)
-        .map(Into::into);
+    let phpize_deps = phpize_deps.split_ascii_whitespace().map(String::from);
 
     all_packages.extend(phpize_deps);
 
     for dependency in dependencies {
         if let Some(packages) = dependency.packages() {
-            all_packages.extend(packages.iter().map(Clone::clone).map(Into::into));
+            all_packages.extend(packages.iter().map(String::from));
         }
     }
 

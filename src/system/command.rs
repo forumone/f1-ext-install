@@ -1,79 +1,74 @@
 //! Helpers for interacting with system commands.
 
-use quick_error::{quick_error, ResultExt as _};
+use snafu::{ResultExt, Snafu};
 use std::{
-    borrow::Cow,
     convert::Into,
     io,
     os::unix::process::ExitStatusExt as _,
     process::{Command as SystemCommand, ExitStatus, Stdio},
-    str::Utf8Error,
     string::FromUtf8Error,
 };
 
 /// Returns a message indicating the cause of a process exit.
-fn exit_status_reason(status: ExitStatus) -> Cow<'static, str> {
+fn exit_status_reason(status: ExitStatus) -> String {
     if let Some(code) = status.code() {
-        format!("non-zero exit code {}", code).into()
+        format!("non-zero exit code {}", code)
     } else if let Some(signal) = status.signal() {
-        format!("killed by signal {}", signal).into()
+        format!("killed by signal {}", signal)
     } else {
-        "unknown reason".into()
+        String::from("unknown reason")
     }
 }
 
-quick_error! {
-    #[derive(Debug)]
-    /// Indicates how a process failed.
-    pub enum CommandError {
-        /// General errors from `std::io`, usually indicating a failure to start a process.
-        Io(command: String, err: io::Error) {
-            context(command: &'a str, err: io::Error) -> (command.to_owned(), err)
-            cause(err)
-            display("I/O Error: {}", err)
-        }
+#[derive(Debug, Snafu)]
+/// Indicates how a process failed.
+pub enum CommandError {
+    /// General errors from `std::io`, usually indicating a failure to start a process.
+    #[snafu(display("Failed to run {}: {}", command, source))]
+    Io {
+        /// The underlying IO error
+        source: io::Error,
+        /// The command that failed
+        command: String,
+    },
 
-        /// Indicates that a process exited with a non-zero code. On *nix systems, also
-        /// indicates death by signal.
-        BadExit(exit: ExitStatus) {
-            from()
-            display("Process exited unsuccessfully: {}", exit_status_reason(*exit))
-        }
+    /// Indicates that a process exited with a non-zero code. On *nix systems, also
+    /// indicates death by signal.
+    #[snafu(display("{} exited unsuccessfully: {}", command, exit_status_reason(*exit)))]
+    BadExit {
+        /// The command that failed
+        command: String,
+        /// The exit cause
+        exit: ExitStatus,
+    },
 
-        /// Indicates that process output could not be decoded as valid UTF-8.
-        Utf8(err: Utf8Error) {
-            cause(err)
-            from()
-            from(err: FromUtf8Error) -> (err.utf8_error())
-            display("UTF-8 error: {}", err)
-        }
+    /// Indicates that process output could not be decoded as valid UTF-8.
+    #[snafu(display("UTF-8 error: {}", source))]
+    Utf8 {
+        /// The underlying UTF-8 error
+        source: FromUtf8Error,
+    },
+}
+
+// For some reason, snafu won't generate this automatically
+impl From<FromUtf8Error> for CommandError {
+    fn from(err: FromUtf8Error) -> Self {
+        Self::Utf8 { source: err }
     }
 }
 
 /// Helper type for the result of command execution.
 pub type Result<T> = std::result::Result<T, CommandError>;
 
-/// Extension trait for converting process exit codes into `Result`s.
-///
-/// This trait is the glue between a normal `ExitStatus` and `CommandError::BadExit`.
-pub trait ExitStatusExt {
-    /// Convert this object into a `Result<Self, CommandError>`.
-    ///
-    /// If the status is anything other than succesful, this method is expected to return
-    /// an `Err(CommandError::BadExit(exit))`. Otherwise, `Ok(self)` is returned. This
-    /// makes handling simple cases of failure more ergonomic.
-    fn into_result(self) -> Result<Self>
-    where
-        Self: Sized;
-}
-
-impl ExitStatusExt for ExitStatus {
-    fn into_result(self) -> Result<Self> {
-        if self.success() {
-            Ok(self)
-        } else {
-            Err(self.into())
-        }
+/// Convert an `ExitStatus` into a Result, using `command` for context to the user
+fn status_result(status: ExitStatus, command: &str) -> Result<ExitStatus> {
+    if status.success() {
+        Ok(status)
+    } else {
+        Err(CommandError::BadExit {
+            command: String::from(command),
+            exit: status,
+        })
     }
 }
 
@@ -87,14 +82,6 @@ pub struct Command<'a> {
     program: &'a str,
     /// The arguments to pass to the program, if any.
     args: Vec<String>,
-}
-
-/// Helper function to convert a borrowable `str` into an owned `String`.
-fn to_string<S>(input: S) -> String
-where
-    S: AsRef<str>,
-{
-    str::to_owned(input.as_ref())
 }
 
 impl<'a> Command<'a> {
@@ -111,7 +98,7 @@ impl<'a> Command<'a> {
     where
         S: AsRef<str> + 'a,
     {
-        self.args.push(to_string(arg));
+        self.args.push(String::from(arg.as_ref()));
         self
     }
 
@@ -121,7 +108,7 @@ impl<'a> Command<'a> {
         S: AsRef<str> + 'a,
         I: IntoIterator<Item = S>,
     {
-        let args = args.into_iter().map(to_string);
+        let args = args.into_iter().map(|arg| String::from(arg.as_ref()));
 
         self.args.extend(args);
         self
@@ -132,9 +119,12 @@ impl<'a> Command<'a> {
     pub fn status(self) -> Result<ExitStatus> {
         let program = self.program;
         let mut command: SystemCommand = self.into();
-        let status = command.status().context(program)?;
+        let status = command.status().with_context(|| Io {
+            command: String::from(program),
+        })?;
 
-        status.into_result().map_err(Into::into)
+        let status = status_result(status, program)?;
+        Ok(status)
     }
 
     /// Execute the given command and wait for it to complete, discarding successful
@@ -159,9 +149,11 @@ impl<'a> Command<'a> {
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
 
-        let output = command.output().context(program)?;
+        let output = command.output().with_context(|| Io {
+            command: String::from(program),
+        })?;
 
-        let _ = output.status.into_result()?;
+        let _ = status_result(output.status, program)?;
 
         let buffer = String::from_utf8(output.stdout)?;
 
