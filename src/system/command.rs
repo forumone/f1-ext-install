@@ -1,12 +1,11 @@
 //! Helpers for interacting with system commands.
 
-use quick_error::{quick_error, ResultExt};
+use snafu::{ResultExt, Snafu};
 use std::{
     convert::Into,
     io,
     os::unix::process::ExitStatusExt as _,
     process::{Command as SystemCommand, ExitStatus, Stdio},
-    str::Utf8Error,
     string::FromUtf8Error,
 };
 
@@ -21,30 +20,40 @@ fn exit_status_reason(status: ExitStatus) -> String {
     }
 }
 
-quick_error! {
-    #[derive(Debug)]
-    /// Indicates how a process failed.
-    pub enum CommandError {
-        /// General errors from `std::io`, usually indicating a failure to start a process.
-        Io(command: String, err: io::Error) {
-            context(command: &'a str, err: io::Error) -> (command.to_owned(), err)
-            cause(err)
-            display("Failed to run {}: {}", command, err)
-        }
+#[derive(Debug, Snafu)]
+/// Indicates how a process failed.
+pub enum CommandError {
+    /// General errors from `std::io`, usually indicating a failure to start a process.
+    #[snafu(display("Failed to run {}: {}", command, source))]
+    Io {
+        /// The underlying IO error
+        source: io::Error,
+        /// The command that failed
+        command: String,
+    },
 
-        /// Indicates that a process exited with a non-zero code. On *nix systems, also
-        /// indicates death by signal.
-        BadExit(command: String, exit: ExitStatus) {
-            display("{} exited unsuccessfully: {}", command, exit_status_reason(*exit))
-        }
+    /// Indicates that a process exited with a non-zero code. On *nix systems, also
+    /// indicates death by signal.
+    #[snafu(display("{} exited unsuccessfully: {}", command, exit_status_reason(*exit)))]
+    BadExit {
+        /// The command that failed
+        command: String,
+        /// The exit cause
+        exit: ExitStatus,
+    },
 
-        /// Indicates that process output could not be decoded as valid UTF-8.
-        Utf8(err: Utf8Error) {
-            cause(err)
-            from()
-            from(err: FromUtf8Error) -> (err.utf8_error())
-            display("UTF-8 error: {}", err)
-        }
+    /// Indicates that process output could not be decoded as valid UTF-8.
+    #[snafu(display("UTF-8 error: {}", source))]
+    Utf8 {
+        /// The underlying UTF-8 error
+        source: FromUtf8Error
+    },
+}
+
+// For some reason, snafu won't generate this automatically
+impl From<FromUtf8Error> for CommandError {
+    fn from(err: FromUtf8Error) -> Self {
+        Self::Utf8 { source: err }
     }
 }
 
@@ -56,7 +65,10 @@ fn status_result(status: ExitStatus, command: &str) -> Result<ExitStatus> {
     if status.success() {
         Ok(status)
     } else {
-        Err(CommandError::BadExit(String::from(command), status))
+        Err(CommandError::BadExit {
+            command: String::from(command),
+            exit: status,
+        })
     }
 }
 
@@ -107,7 +119,9 @@ impl<'a> Command<'a> {
     pub fn status(self) -> Result<ExitStatus> {
         let program = self.program;
         let mut command: SystemCommand = self.into();
-        let status = command.status().context(program)?;
+        let status = command.status().with_context(|| Io {
+            command: String::from(program),
+        })?;
 
         let status = status_result(status, program)?;
         Ok(status)
@@ -135,7 +149,9 @@ impl<'a> Command<'a> {
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
 
-        let output = command.output().context(program)?;
+        let output = command.output().with_context(|| Io {
+            command: String::from(program),
+        })?;
 
         let _ = status_result(output.status, program)?;
 
