@@ -56,6 +56,11 @@ lazy_static! {
                 String::from("libjpeg-turbo-dev"),
             ]),
             configure_cmd: Some(vec![
+                // Skip option checking while we still support pre-7.4 PHPs - this is a
+                // pretty bad idea in general, but since we're applying it only to the GD
+                // extension in particular, we should be relatively safe.
+                String::from("--disable-option-checking"),
+
                 String::from("--with-freetype-dir=/usr/include/"),
                 String::from("--with-jpeg-dir=/usr/include/"),
                 String::from("--with-png-dir=/usr/include/"),
