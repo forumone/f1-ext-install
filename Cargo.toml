@@ -1,7 +1,7 @@
 [package]
 name = "f1-ext-install"
 description = "Helper for building PHP extensions in Docker"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["gustavderdrache <aford@forumone.com>"]
 edition = "2018"
 license = "Apache-2.0 OR MIT"
