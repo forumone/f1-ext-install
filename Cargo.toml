@@ -20,12 +20,12 @@ snafu = "0.6"
 structopt = "0.3.3"
 
 [dev-dependencies]
-bollard = "0.4.0-alpha.1"
+bollard = "0.5"
 cool_asserts = "1.0"
-futures-util-preview = "0.3.0-alpha.19"
+futures = "0.3"
 indoc = "0.3"
 tar = "0.4"
-tokio-test = "0.2.0-alpha.5"
+tokio-test = "0.2"
 
 [profile.release]
 lto = true
