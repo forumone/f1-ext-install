@@ -1,5 +1,5 @@
 use bollard::{image::BuildImageOptions, Docker};
-use futures_util::StreamExt as _;
+use futures::StreamExt as _;
 use std::convert::TryInto as _;
 use tar::{Builder, Header};
 use tokio_test::block_on;
