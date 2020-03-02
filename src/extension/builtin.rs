@@ -48,7 +48,46 @@ impl Builtin {
 }
 
 lazy_static! {
+    // NB. A few extensions are indicated in comments but not explicitly listed:
+    // - A "no need" comment just means that there are no external dependencies
+    //   for the extension, so we let BuiltinData::default() handle it.
+    // - An "already loaded" comment means that for php:7.4-cli-alpine, the test
+    //   extension_loaded("<name>") returns true, and we assume we don't need to add it.
+    // - A "TODO" comment indicates that we can add the extension, but there may not be a
+    //   need, so we've avoided adding it to the built-in registry for now.
     static ref REGISTRY: BTreeMap<&'static str, BuiltinData> = btreemap! {
+        // bcmath: no need
+
+        "bz2" => BuiltinData {
+            packages: Some(vec![
+                String::from("bzip2-dev"),
+            ]),
+            configure_cmd: Some(vec![
+                String::from("--with-bz2")
+            ]),
+        },
+
+        // calendar: no need
+
+        // ctype: already loaded
+        // curl: already loaded
+        // dom: already loaded
+
+        "enchant" => BuiltinData {
+            packages: Some(vec![
+                String::from("enchant-dev")
+            ]),
+            configure_cmd: Some(vec![
+                String::from("--with-enchant"),
+            ]),
+        },
+
+        // exif: no need
+
+        // fileinfo: already loaded
+        // filter: already loaded
+        // ftp: already loaded
+
         "gd" => BuiltinData {
             packages: Some(vec![
                 String::from("coreutils"),
@@ -67,10 +106,84 @@ lazy_static! {
             ]),
         },
 
+        "gettext" => BuiltinData {
+            packages: Some(vec![
+                String::from("gettext"),
+                String::from("gettext-dev"),
+            ]),
+            configure_cmd: Some(vec![
+                String::from("--with-gettext")
+            ]),
+        },
+
+        "gmp" => BuiltinData {
+            packages: Some(vec![
+                String::from("gmp-dev"),
+            ]),
+            configure_cmd: Some(vec![
+                String::from("--with-gmp")
+            ]),
+        },
+
+        // iconv: already loaded
+
+        "imap" => BuiltinData {
+            packages: Some(vec![
+                String::from("imap-dev"),
+                String::from("openssl-dev"),
+            ]),
+            configure_cmd: Some(vec![
+                String::from("--with-imap"),
+                String::from("--with-imap-ssl"),
+            ]),
+        },
+
+        "intl" => BuiltinData {
+            packages: Some(vec![
+                String::from("icu-dev"),
+            ]),
+            ..BuiltinData::default()
+        },
+
+        // json: already loaded
+
+        "ldap" => BuiltinData {
+            packages: Some(vec![
+                String::from("openldap-dev")
+            ]),
+            configure_cmd: Some(vec![
+                String::from("--with-ldap"),
+                String::from("--with-ldap-sasl"),
+            ]),
+        },
+
+        // mbstring: already loaded
+        // mysqli: no need
+        // mysqlnd: no need
+        // opcache: no need
+        // pcntl: no need
+        // phar: no need
+        // pdo: already loaded
+        // pdo_mysql: no need
+        // pdo_pgsql: TODO
+        // posix: already loaded
+        // pspell: TODO
+        // session: already loaded
+        // simplexml: already loaded
+
         "soap" => BuiltinData {
             packages: Some(vec![String::from("libxml2-dev")]),
             ..BuiltinData::default()
         },
+
+        // sodium: already loaded
+        // sqlite3: already loaded
+        // tokenizer: already loaded
+        // xml: already loaded
+        // xmlreader: already loaded
+        // xmlrpc: TODO
+        // xmlwriter: already loaded
+        // xsl: TODO
 
         "zip" => BuiltinData {
             packages: Some(vec![String::from("libzip-dev")]),

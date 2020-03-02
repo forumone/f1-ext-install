@@ -1,5 +1,5 @@
 env:
-  RUST_VERSION: '1.39'
+  RUST_VERSION: '1.41'
 
 steps:
   - label: ":rust: Lint"
