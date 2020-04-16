@@ -3,6 +3,36 @@ use indoc::indoc;
 mod common;
 use common::{build_image, connect, tag_for_test, PHP_VERSIONS};
 
+#[test]
+fn test_gd_features() {
+    // Test to assert that these prerequisite GD features are available:
+    // 1. JPEG support
+    // 2. FreeType support
+    // 3. PNG support
+
+    let dockerfile = indoc!(
+        r#"ARG PHP_VERSION
+           FROM php:${PHP_VERSION}-cli-alpine
+
+           COPY f1-ext-install /usr/bin/
+           RUN chmod +x /usr/bin/f1-ext-install
+
+           RUN f1-ext-install builtin:gd >/dev/null
+           RUN php -d assert.exception=1 -r 'assert(gd_info()["JPEG Support"]);'
+           RUN php -d assert.exception=1 -r 'assert(gd_info()["FreeType Support"]);'
+           RUN php -d assert.exception=1 -r 'assert(gd_info()["PNG Support"]);'
+        "#
+    );
+
+    let client = connect();
+
+    for &version in PHP_VERSIONS {
+        let tag = tag_for_test("gd-features", "gd", version);
+
+        build_image(&client, dockerfile, &[("PHP_VERSION", version)], &tag);
+    }
+}
+
 const REGISTRY_DOCKERFILE: &str = indoc!(
     r#"ARG PHP_VERSION
        FROM php:${PHP_VERSION}-cli-alpine
