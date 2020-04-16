@@ -69,6 +69,7 @@ pub fn build_image(client: &Docker, dockerfile: &str, args: &[(&str, &str)], tag
 
         Ok(())
     })
+    .map_err(|error| format!("Failed to build {}: {}", tag, error))
     .unwrap();
 }
 
