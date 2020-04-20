@@ -94,7 +94,7 @@ fn find_pecl_data(name: &str) -> PeclData {
         return found.clone();
     }
 
-    let prefix = format!("F1_PECL_{}", name.to_ascii_uppercase());
+    let prefix = format!("F1_PECL_{}_", name.to_ascii_uppercase());
     if let Ok(data) = envy::prefixed(prefix).from_env() {
         return data;
     }

@@ -69,7 +69,7 @@ fn test_external_pecl_config() {
                 &client,
                 EXTERNAL_DOCKERFILE,
                 &[
-                    ("PACKAGE_NAME", "ldap"),
+                    ("PACKAGE_NAME", "mcrypt"),
                     ("PHP_VERSION", version),
                     ("PACKAGES_KEY", packages_key),
                     ("PACKAGES_VALUE", packages_value),
