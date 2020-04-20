@@ -150,12 +150,27 @@ const EXTERNAL_DOCKERFILE: &str = indoc!(
 /// the shell/Dockerfile needed to install the package.
 macro_rules! define_external_test {
     (
+        $name:ident,
+        $pkgs_key:ident = $pkgs_val:tt,
+        $conf_key:ident = $conf_val:tt $(,)?
+    ) => {
+        define_external_test!(
+            $name,
+            $pkgs_key = $pkgs_val,
+            $conf_key = $conf_val,
+            versions = PHP_VERSIONS
+        );
+    };
+
+    (
         // The extension name
         $name:ident,
         // The ENV_VAR = "value" for which packages (if any) to install
         $pkgs_key:ident = $pkgs_val:tt,
         // The ENV_VAR = "value" for additional configure flags (if any)
-        $conf_key:ident = $conf_val:tt $(,)?
+        $conf_key:ident = $conf_val:tt,
+        // List of versions to iterate over (useful for, e.g., limiting tests to 7.4)
+        versions = $versions:expr $(,)?
     ) => {
         #[test]
         fn $name() {
@@ -163,11 +178,11 @@ macro_rules! define_external_test {
 
             let package = stringify!($name);
             let packages_key = stringify!($pkgs_key);
-            let packages_value = stringify!($packages_value);
+            let packages_value = $pkgs_val;
             let configure_key = stringify!($conf_key);
-            let configure_value = stringify!($conf_val);
+            let configure_value = $conf_val;
 
-            for &version in PHP_VERSIONS {
+            for &version in $versions {
                 let tag = tag_for_test("builtin", package, version);
 
                 build_image(
@@ -192,4 +207,5 @@ define_external_test!(
     ffi,
     F1_BUILTIN_FFI_PACKAGES = "libffi-dev",
     F1_BUILTIN_FFI_CONFIGURE_ARGS = "--with-ffi",
+    versions = &["7.4"]
 );
