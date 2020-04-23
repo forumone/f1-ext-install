@@ -100,9 +100,18 @@ lazy_static! {
                 // extension in particular, we should be relatively safe.
                 String::from("--disable-option-checking"),
 
-                String::from("--with-freetype-dir=/usr/include/"),
-                String::from("--with-jpeg-dir=/usr/include/"),
-                String::from("--with-png-dir=/usr/include/"),
+                // Configuration for PHP >= 7.4: these options tell configure to use
+                // pkg-config to find the needed compiler flags
+                String::from("--with-freetype"),
+                String::from("--with-jpeg"),
+                String::from("--with-png"),
+
+                // Configuration for PHP < 7.3 needs the --with-foo-dir options instead,
+                // which looks looks for files starting with this prefix (e.g., passing
+                // --with-foo-dir=/usr looks for foo.h inside of /usr/include, and so on.)
+                String::from("--with-freetype-dir=/usr"),
+                String::from("--with-jpeg-dir=/usr"),
+                String::from("--with-png-dir=/usr"),
             ]),
         },
 

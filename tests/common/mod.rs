@@ -1,4 +1,7 @@
-use bollard::{image::BuildImageOptions, Docker};
+use bollard::{
+    image::{BuildImageOptions, BuildImageResults},
+    Docker,
+};
 use futures::StreamExt as _;
 use std::convert::TryInto as _;
 use tar::{Builder, Header};
@@ -52,14 +55,21 @@ pub fn build_image(client: &Docker, dockerfile: &str, args: &[(&str, &str)], tag
         while let Some(result) = stream.next().await {
             let result = match result {
                 Ok(result) => result,
-                Err(err) => return Err(err),
+                Err(err) => return Err(err.to_string()),
             };
+
+            // Errors during `RUN` are propagated as BuildImageError, so we return the
+            // value as an error message to the block_on() function.
+            if let BuildImageResults::BuildImageError { ref error, .. } = result {
+                return Err(error.clone());
+            }
 
             println!("{:?}", result);
         }
 
         Ok(())
     })
+    .map_err(|error| format!("Failed to build {}: {}", tag, error))
     .unwrap();
 }
 
